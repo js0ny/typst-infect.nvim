@@ -62,6 +62,36 @@ require("typst-infect").setup({
 
 The local configuration must run before a Markdown parser is created. Neovim's `exrc` and local-config trust settings still apply.
 
+### Nix
+
+Using overlay 
+
+```nix
+{
+  nixpkgs.overlays = [ inputs.typst-infect.overlays.default ];
+}
+```
+
+It exposes the plugin as `pkgs.vimPlugins.typst-infect`.
+
+#### Nixvim
+
+Add the module to a Nixvim configuration:
+
+```nix
+{
+  imports = [ inputs.typst-infect.nixvimModules.default ];
+
+  plugins.typst-infect = {
+    enable = true;
+    settings.markdown = {
+      enabled = true;
+    };
+  };
+}
+```
+
+
 Run `:checkhealth typst-infect` to verify parsers, the Typst executable, and the Snacks Typst image query.
 
 ## Development
