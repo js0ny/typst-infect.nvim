@@ -1,4 +1,10 @@
-local M = {}
+local M = {
+  config = {
+    markdown = {
+      enabled = true,
+    },
+  },
+}
 
 local injection_query = [[
 ;; extends
@@ -63,7 +69,7 @@ local function deduplicate(images)
 end
 
 function M.setup_snacks()
-  if not _G.Snacks then
+  if not M.config.markdown.enabled or not _G.Snacks then
     return false
   end
 
@@ -95,23 +101,44 @@ function M.setup_snacks()
   return true
 end
 
-function M.setup()
+function M.setup(options)
   if vim.fn.has("nvim-0.11") == 0 then
     error("typst-infect requires Neovim 0.11 or newer")
   end
 
-  vim.treesitter.query.set("markdown_inline", "injections", injection_query)
+  options = options or {}
+  vim.validate("options", options, "table")
+  vim.validate("options.markdown", options.markdown, "table", true)
+  if options.markdown then
+    vim.validate("options.markdown.enabled", options.markdown.enabled, "boolean", true)
+  end
+  M.config = vim.tbl_deep_extend("force", {}, M.config, options)
 
-  local query = assert(vim.treesitter.query.get("markdown_inline", "injections"))
-  if not query.query.disable_pattern then
-    error("typst-infect requires TSQuery:disable_pattern()")
+  if not M.predicate_registered then
+    vim.treesitter.query.add_predicate("typst-infect-enabled?", function()
+      return M.config.markdown.enabled
+    end)
+    M.predicate_registered = true
   end
 
-  for pattern, directives in pairs(query.info.patterns) do
-    for _, directive in ipairs(directives) do
-      if is_latex_injection(directive) then
-        query.query:disable_pattern(pattern)
-        break
+  vim.treesitter.query.set(
+    "markdown_inline",
+    "injections",
+    M.config.markdown.enabled and injection_query or ";; extends\n"
+  )
+
+  if M.config.markdown.enabled then
+    local query = assert(vim.treesitter.query.get("markdown_inline", "injections"))
+    if not query.query.disable_pattern then
+      error("typst-infect requires TSQuery:disable_pattern()")
+    end
+
+    for pattern, directives in pairs(query.info.patterns) do
+      for _, directive in ipairs(directives) do
+        if is_latex_injection(directive) then
+          query.query:disable_pattern(pattern)
+          break
+        end
       end
     end
   end
@@ -121,7 +148,9 @@ function M.setup()
     group = group,
     pattern = "markdown",
     callback = function()
-      vim.schedule(M.setup_snacks)
+      if M.config.markdown.enabled then
+        vim.schedule(M.setup_snacks)
+      end
     end,
   })
 

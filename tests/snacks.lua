@@ -3,7 +3,7 @@ vim.opt.runtimepath:prepend(snacks_path)
 vim.opt.runtimepath:prepend(vim.uv.cwd())
 
 local typst_infect = require("typst-infect")
-typst_infect.setup()
+typst_infect.setup({ markdown = { enabled = true } })
 require("snacks").setup({ image = { enabled = true } })
 assert(typst_infect.setup_snacks(), "failed to configure Snacks.image integration")
 
@@ -46,5 +46,18 @@ local block = assert(vim.iter(result):find(function(image)
 end))
 assert(vim.deep_equal(block.range, { 3, 0, 5, 2 }), "display math does not own the full Markdown range")
 assert(block.content:find("$\nsum_(i=1)^n i = (n(n+1))/2\n$", 1, true), "display math was not wrapped")
+
+typst_infect.setup({ markdown = { enabled = false } })
+local disabled_result
+require("snacks.image.doc").find(buffer, function(images)
+  disabled_result = images
+end)
+vim.wait(5000, function()
+  return disabled_result ~= nil
+end, 10)
+assert(disabled_result, "disabled Snacks.image lookup timed out")
+assert(not vim.iter(disabled_result):any(function(image)
+  return image.lang == "typst_infect"
+end), "Markdown rendering remained enabled")
 
 print("typst-infect: Snacks.image tests passed")

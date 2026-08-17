@@ -17,7 +17,7 @@ $$
 
 - Neovim 0.11+
 - Tree-sitter parsers: `markdown`, `markdown_inline`, and `typst`
-- [snacks.nvim](https://github.com/folke/snacks.nvim) 
+- [snacks.nvim](https://github.com/folke/snacks.nvim)
 - `typst`
 - ImageMagick, GhostScript
 
@@ -32,8 +32,35 @@ $$
   dependencies = {
     "folke/snacks.nvim",
   },
+  opts = {
+    markdown = {
+      enabled = true,
+    },
+  },
 }
 ```
+
+`markdown.enabled = true` is the default. To enable the behaviour only in trusted project directories, set it to `false` in the global configuration:
+
+```lua
+opts = {
+  markdown = {
+    enabled = false,
+  },
+}
+```
+
+Then enable it from the project's `.nvim.lua` or `.exrc`:
+
+```lua
+require("typst-infect").setup({
+  markdown = {
+    enabled = true,
+  },
+})
+```
+
+The local configuration must run before a Markdown parser is created. Neovim's `exrc` and local-config trust settings still apply.
 
 Run `:checkhealth typst-infect` to verify parsers, the Typst executable, and the Snacks Typst image query.
 
