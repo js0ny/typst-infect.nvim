@@ -5,7 +5,6 @@ vim.opt.runtimepath:prepend(vim.uv.cwd())
 local typst_infect = require('typst-infect')
 typst_infect.setup({ markdown = { enabled = true } })
 require('snacks').setup({ image = { enabled = true } })
-assert(typst_infect.setup_snacks(), 'failed to configure Snacks.image integration')
 
 local buffer = vim.api.nvim_create_buf(false, true)
 vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
@@ -17,8 +16,11 @@ vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
 })
 vim.bo[buffer].filetype = 'markdown'
 
+local doc = require('snacks.image.doc')
+assert(doc._typst_infect_configured, 'FileType did not configure Snacks.image integration')
+
 local result
-require('snacks.image.doc').find(buffer, function(images)
+doc.find(buffer, function(images)
   result = images
 end)
 

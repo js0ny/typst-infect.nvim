@@ -6,8 +6,11 @@ local M = {
   },
 }
 
+-- A self-contained query avoids eagerly compiling inherited injections just to disable LaTeX.
 local injection_query = [[
-;; extends
+((html_tag) @injection.content
+  (#set! injection.language "html")
+  (#set! injection.combined))
 
 ((latex_block
   (latex_span_delimiter) @_start
@@ -27,10 +30,6 @@ local injection_query = [[
   (#set! injection.language "typst")
   (#set! injection.include-children))
 ]]
-
-local function is_latex_injection(directive)
-  return directive[1] == 'set!' and directive[2] == 'injection.language' and directive[3] == 'latex'
-end
 
 local function position_lte(left_row, left_col, right_row, right_col)
   return left_row < right_row or (left_row == right_row and left_col <= right_col)
@@ -125,34 +124,18 @@ function M.setup(options)
     M.config.markdown.enabled and injection_query or ';; extends\n'
   )
 
-  if M.config.markdown.enabled then
-    local query = assert(vim.treesitter.query.get('markdown_inline', 'injections'))
-    if not query.query.disable_pattern then
-      error('typst-infect requires TSQuery:disable_pattern()')
-    end
-
-    for pattern, directives in pairs(query.info.patterns) do
-      for _, directive in ipairs(directives) do
-        if is_latex_injection(directive) then
-          query.query:disable_pattern(pattern)
-          break
-        end
-      end
-    end
-  end
-
   local group = vim.api.nvim_create_augroup('typst-infect', { clear = true })
   vim.api.nvim_create_autocmd('FileType', {
     group = group,
     pattern = 'markdown',
     callback = function()
       if M.config.markdown.enabled then
+        M.setup_snacks()
         vim.schedule(M.setup_snacks)
       end
     end,
   })
 
-  M.setup_snacks()
   M.configured = true
 end
 
