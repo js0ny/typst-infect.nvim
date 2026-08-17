@@ -14,11 +14,28 @@ function M.check()
     vim.health.error('Neovim 0.11+ is required')
   end
 
-  for _, language in ipairs({ 'markdown', 'markdown_inline', 'typst' }) do
+  local config = require('typst-infect').config
+  local languages = {}
+  if config.markdown.enabled then
+    vim.list_extend(languages, { 'markdown', 'markdown_inline', 'typst' })
+  end
+  if config.org.enabled then
+    languages[#languages + 1] = 'org'
+  end
+
+  for _, language in ipairs(languages) do
     if has_parser(language) then
       vim.health.ok(('Tree-sitter parser `%s` is installed'):format(language))
     else
       vim.health.error(('Tree-sitter parser `%s` is missing'):format(language))
+    end
+  end
+
+  if config.org.enabled then
+    if #vim.api.nvim_get_runtime_file('lua/orgmode/init.lua', false) > 0 then
+      vim.health.ok('nvim-orgmode is installed')
+    else
+      vim.health.error('nvim-orgmode is required when Org integration is enabled')
     end
   end
 

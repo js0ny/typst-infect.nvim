@@ -1,5 +1,5 @@
 {
-  description = "Display Typst math in Markdown math blocks";
+  description = "Display Typst content in Markdown and Org";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -36,7 +36,7 @@
           };
           meta = {
             license = pkgs.lib.licenses.mit;
-            description = "Display Typst math in Markdown math blocks";
+            description = "Display Typst content in Markdown and Org";
             platforms = pkgs.lib.platforms.all;
             sourceProvenance = [ pkgs.lib.sourceTypes.fromSource ];
           };
@@ -56,17 +56,40 @@
             defaultText = lib.literalExpression "typst-infect package from the flake";
             description = "The typst-infect package to use.";
           };
-          description = "Display Typst math in Markdown math blocks";
+          description = "Display Typst content in Markdown and Org";
           maintainers = [ ];
 
-          settingsOptions.markdown = lib.mkOption {
-            type = lib.types.submodule {
-              freeformType = lib.types.attrsOf lib.nixvim.lua-types.anything;
+          settingsOptions = {
+            markdown = lib.mkOption {
+              type = lib.types.submodule {
+                freeformType = lib.types.attrsOf lib.nixvim.lua-types.anything;
+              };
+              default = {
+                enabled = true;
+              };
+              description = "Markdown integration settings passed to typst-infect.";
             };
-            default = {
-              enabled = true;
+
+            org = lib.mkOption {
+              type = lib.types.submodule {
+                freeformType = lib.types.attrsOf lib.nixvim.lua-types.anything;
+              };
+              default = {
+                enabled = false;
+                variants = {
+                  inline = true;
+                  display = true;
+                  latex_env = false;
+                  equation_block = false;
+                  src_blocks = [
+                    "typst"
+                    "typst_math"
+                    "math"
+                  ];
+                };
+              };
+              description = "Org integration settings passed to typst-infect.";
             };
-            description = "Markdown integration settings passed to typst-infect.";
           };
 
           extraPackages = [
@@ -78,6 +101,7 @@
           extraConfig = _: {
             plugins.snacks.enable = lib.mkDefault true;
             plugins.snacks.settings.image.enabled = lib.mkDefault true;
+            plugins.orgmode.enable = lib.mkDefault config.plugins.typst-infect.settings.org.enabled;
             plugins.treesitter.enable = lib.mkDefault true;
             plugins.treesitter.grammarPackages = lib.mkAfter (
               with config.plugins.treesitter.package.builtGrammars;
@@ -114,9 +138,22 @@
                 imports = [ self.nixvimModules.default ];
                 plugins.typst-infect = {
                   enable = true;
-                  settings.markdown = {
-                    enabled = true;
-                    testVariant = "freeform";
+                  settings = {
+                    markdown = {
+                      enabled = true;
+                      testVariant = "freeform";
+                    };
+                    org = {
+                      enabled = true;
+                      variants = {
+                        src_blocks = [
+                          "typst"
+                          "typst_math"
+                          "math"
+                        ];
+                        testVariant = "freeform";
+                      };
+                    };
                   };
                 };
               };
