@@ -29,9 +29,7 @@ local injection_query = [[
 ]]
 
 local function is_latex_injection(directive)
-  return directive[1] == "set!"
-    and directive[2] == "injection.language"
-    and directive[3] == "latex"
+  return directive[1] == 'set!' and directive[2] == 'injection.language' and directive[3] == 'latex'
 end
 
 local function position_lte(left_row, left_col, right_row, right_col)
@@ -56,7 +54,7 @@ local function deduplicate(images)
   end
 
   return vim.tbl_filter(function(image)
-    if image._typst_infect or image.lang ~= "typst" or image.type ~= "math" or not image.range then
+    if image._typst_infect or image.lang ~= 'typst' or image.type ~= 'math' or not image.range then
       return true
     end
     for _, range in ipairs(markdown_math) do
@@ -73,7 +71,7 @@ function M.setup_snacks()
     return false
   end
 
-  local ok, doc = pcall(require, "snacks.image.doc")
+  local ok, doc = pcall(require, 'snacks.image.doc')
   if not ok or doc._typst_infect_configured then
     return ok
   end
@@ -85,7 +83,7 @@ function M.setup_snacks()
 
   doc.transforms.typst_infect = function(image, context)
     image._typst_infect = true
-    image.content = "$" .. image.content .. "$"
+    image.content = '$' .. image.content .. '$'
     return typst_transform(image, context)
   end
 
@@ -102,35 +100,35 @@ function M.setup_snacks()
 end
 
 function M.setup(options)
-  if vim.fn.has("nvim-0.11") == 0 then
-    error("typst-infect requires Neovim 0.11 or newer")
+  if vim.fn.has('nvim-0.11') == 0 then
+    error('typst-infect requires Neovim 0.11 or newer')
   end
 
   options = options or {}
-  vim.validate("options", options, "table")
-  vim.validate("options.markdown", options.markdown, "table", true)
+  vim.validate('options', options, 'table')
+  vim.validate('options.markdown', options.markdown, 'table', true)
   if options.markdown then
-    vim.validate("options.markdown.enabled", options.markdown.enabled, "boolean", true)
+    vim.validate('options.markdown.enabled', options.markdown.enabled, 'boolean', true)
   end
-  M.config = vim.tbl_deep_extend("force", {}, M.config, options)
+  M.config = vim.tbl_deep_extend('force', {}, M.config, options)
 
   if not M.predicate_registered then
-    vim.treesitter.query.add_predicate("typst-infect-enabled?", function()
+    vim.treesitter.query.add_predicate('typst-infect-enabled?', function()
       return M.config.markdown.enabled
     end)
     M.predicate_registered = true
   end
 
   vim.treesitter.query.set(
-    "markdown_inline",
-    "injections",
-    M.config.markdown.enabled and injection_query or ";; extends\n"
+    'markdown_inline',
+    'injections',
+    M.config.markdown.enabled and injection_query or ';; extends\n'
   )
 
   if M.config.markdown.enabled then
-    local query = assert(vim.treesitter.query.get("markdown_inline", "injections"))
+    local query = assert(vim.treesitter.query.get('markdown_inline', 'injections'))
     if not query.query.disable_pattern then
-      error("typst-infect requires TSQuery:disable_pattern()")
+      error('typst-infect requires TSQuery:disable_pattern()')
     end
 
     for pattern, directives in pairs(query.info.patterns) do
@@ -143,10 +141,10 @@ function M.setup(options)
     end
   end
 
-  local group = vim.api.nvim_create_augroup("typst-infect", { clear = true })
-  vim.api.nvim_create_autocmd("FileType", {
+  local group = vim.api.nvim_create_augroup('typst-infect', { clear = true })
+  vim.api.nvim_create_autocmd('FileType', {
     group = group,
-    pattern = "markdown",
+    pattern = 'markdown',
     callback = function()
       if M.config.markdown.enabled then
         vim.schedule(M.setup_snacks)
